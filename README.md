@@ -38,7 +38,7 @@ NestJS → Prisma → PostgreSQL
 **Build** these models:
 
 - [ ] `User`
-- [ ] `Habit`
+- [x] `Habit`
 - [ ] `HabitCompletion`
 
 ## Stage 3 — Authentication

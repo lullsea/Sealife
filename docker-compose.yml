@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:17 # pin a major version; never use `latest`
+    container_name: sealife-postgres
+    restart: unless-stopped # comes back after reboots
+    environment: # read by the image on FIRST start only
+      # ${VAR:-default}: value from root .env, or the default if unset
+      POSTGRES_USER: ${POSTGRES_USER:-sealife}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sealife}
+      POSTGRES_DB: ${POSTGRES_DB:-sealife}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432" # host:container
+    volumes:
+      - pgdata:/var/lib/postgresql/data # where Postgres keeps its files
+
+volumes:
+  pgdata: # a named volume, managed by Docker

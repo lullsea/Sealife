@@ -6,7 +6,7 @@ import {
   ParseIntPipe,
   Post,
 } from '@nestjs/common';
-import type { Habit } from './habit.interface';
+import type { Habit } from '../generated/prisma/client';
 import { HabitsService } from './habits.service';
 import { CreateHabitDTO } from './dto/create-habit';
 
@@ -18,21 +18,20 @@ export class HabitsController {
 
   // GET /habits
   @Get()
-  findAll(): Habit[] {
+  findAll(): Promise<Habit[]> {
     return this.habitsService.findAll();
   }
 
   // GET /habits/:id. URL params are strings; ParseIntPipe converts to a number
   // and returns 400 if it isn't one.
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number): Habit {
+  findOne(@Param('id', ParseIntPipe) id: number): Promise<Habit> {
     return this.habitsService.findOne(id);
   }
 
-  // POST /habits with body { "name": "..." }
-  // TODO(Stage 1: DTOs + Validation): replace this inline type with a CreateHabitDto.
+  // POST /habits with body { "name": "...", "description"?: "..." }
   @Post()
-  create(@Body() dto: CreateHabitDTO): Habit {
+  create(@Body() dto: CreateHabitDTO): Promise<Habit> {
     return this.habitsService.create(dto);
   }
 }
