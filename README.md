@@ -22,9 +22,9 @@ This isn't a product. It's a playground that grows in layers, where each stage a
 
 Learn, in this order:
 
-- [ ] Modules
-- [ ] Controllers
-- [ ] Services
+- [x] Modules
+- [x] Controllers
+- [x] Services
 - [ ] Dependency Injection
 - [ ] DTOs
 - [ ] Validation
