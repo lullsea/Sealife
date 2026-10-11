@@ -14,4 +14,9 @@ model Habit {
 
   // Back-reference: not a column, just lets you `include: { completions: true }`.
   completions HabitCompletion[]
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

@@ -1,6 +1,6 @@
 import {
-  IsBoolean,
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -26,4 +26,11 @@ export class CreateHabitDTO {
   @IsOptional()
   @IsEnum(HabitFrequency)
   readonly frequency?: HabitFrequency;
+
+  // Habit.userId is a required FK since the add_user migration, so Prisma's
+  // HabitCreateInput demands an owner. @IsInt() rejects "abc" and 1.5; a
+  // nonexistent id still passes validation and fails at the DB (P2003).
+  // TEMPORARY: in Stage 3 the owner comes from the JWT, not the body.
+  @IsInt()
+  readonly userId: number;
 }
