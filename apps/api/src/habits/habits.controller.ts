@@ -6,7 +6,7 @@ import {
   ParseIntPipe,
   Post,
 } from '@nestjs/common';
-import type { Habit } from '../generated/prisma/client';
+import type { Habit, HabitCompletion } from '../generated/prisma/client';
 import { HabitsService } from './habits.service';
 import { CreateHabitDTO } from './dto/create-habit';
 
@@ -33,5 +33,18 @@ export class HabitsController {
   @Post()
   create(@Body() dto: CreateHabitDTO): Promise<Habit> {
     return this.habitsService.create(dto);
+  }
+
+  // POST /habits/:id/complete. Records one completion; 404 if the habit is missing.
+  @Post(':id/complete')
+  complete(@Param('id', ParseIntPipe) id: number): Promise<HabitCompletion> {
+    return this.habitsService.complete(id);
+  }
+  // GET /habits/:id/completions, newest first.
+  @Get(':id/completions')
+  findCompletions(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<HabitCompletion[]> {
+    return this.habitsService.findCompletions(id);
   }
 }

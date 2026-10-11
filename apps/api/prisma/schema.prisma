@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -12,9 +10,36 @@ datasource db {
   provider = "postgresql"
 }
 
+enum HabitFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
 model Habit {
-  id          Int      @id @default(autoincrement()) // primary key, DB assigns 1, 2, 3…
+  id          Int             @id @default(autoincrement()) // primary key, DB assigns 1, 2, 3…
   name        String // required (NOT NULL)
-  description String? // ? = optional (nullable)                                       
-  createdAt   DateTime @default(now()) // DB fills in the timestamp                                     
+  frequency   HabitFrequency?
+  archived    Boolean         @default(false)
+  description String? // ? = optional (nullable)
+  createdAt   DateTime        @default(now()) // DB fills in the timestamp
+
+  // Back-reference: not a column, just lets you `include: { completions: true }`.
+  completions HabitCompletion[]
+}
+
+model HabitCompletion {
+  id          Int      @id @default(autoincrement())
+  completedAt DateTime @default(now())
+
+  // The actual foreign key column in the DB.
+  habitId Int
+
+  // Relation field: not a column. Maps habitId -> Habit.id.
+  // onDelete: Cascade = deleting a Habit deletes its completions.
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  // Postgres does NOT index foreign keys automatically.
+  // findCompletions(habitId) is `WHERE "habitId" = ?`, so index it.
+  @@index([habitId])
 }

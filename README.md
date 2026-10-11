@@ -25,9 +25,9 @@ Learn, in this order:
 - [x] Modules
 - [x] Controllers
 - [x] Services
-- [ ] Dependency Injection
-- [ ] DTOs
-- [ ] Validation
+- [x] Dependency Injection
+- [x] DTOs
+- [x] Validation
 
 ## Stage 2 — Database
 
@@ -39,7 +39,7 @@ NestJS → Prisma → PostgreSQL
 
 - [ ] `User`
 - [x] `Habit`
-- [ ] `HabitCompletion`
+- [x] `HabitCompletion`
 
 ## Stage 3 — Authentication
 
