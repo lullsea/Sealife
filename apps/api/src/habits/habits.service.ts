@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateHabitDTO } from './dto/create-habit';
 import type { Habit, HabitCompletion } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { UpdateHabitDTO } from './dto/update-habit';
 
 // Business logic lives here. No HTTP concepts (requests, status codes, routes).
 // @Injectable() lets Nest create this class and inject it into others.
@@ -28,8 +29,19 @@ export class HabitsService {
   // INSERT INTO "Habit". The DB assigns id and createdAt.
   create(dto: CreateHabitDTO): Promise<Habit> {
     return this.prisma.habit.create({
-      data: { name: dto.name, description: dto.description },
+      data: dto,
     });
+  }
+
+  update(id: number, dto: UpdateHabitDTO): Promise<Habit> {
+    return this.prisma.habit.update({
+      where: { id },
+      data: dto,
+    });
+  }
+
+  delete(id: number) {
+    return this.prisma.habit.delete({ where: { id } });
   }
 
   // INSERT INTO "HabitCompletion". findOne throws 404 if the habit is missing,
