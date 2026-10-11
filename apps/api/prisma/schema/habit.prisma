@@ -1,0 +1,17 @@
+enum HabitFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model Habit {
+  id          Int             @id @default(autoincrement()) // primary key, DB assigns 1, 2, 3…
+  name        String // required (NOT NULL)
+  frequency   HabitFrequency?
+  archived    Boolean         @default(false)
+  description String? // ? = optional (nullable)
+  createdAt   DateTime        @default(now()) // DB fills in the timestamp
+
+  // Back-reference: not a column, just lets you `include: { completions: true }`.
+  completions HabitCompletion[]
+}
