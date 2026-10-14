@@ -37,7 +37,7 @@ NestJS → Prisma → PostgreSQL
 
 **Build** these models:
 
-- [ ] `User`
+- [x] `User`
 - [x] `Habit`
 - [x] `HabitCompletion`
 
