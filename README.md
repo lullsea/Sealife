@@ -43,10 +43,10 @@ NestJS → Prisma → PostgreSQL
 
 ## Stage 3 — Authentication
 
-- [ ] JWT
+- [x] JWT
 - [ ] Guards
 - [ ] RBAC
-- [ ] Password hashing
+- [x] Password hashing
 
 ## Stage 4 — Redis
 

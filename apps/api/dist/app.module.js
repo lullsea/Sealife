@@ -10,12 +10,13 @@ exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const habits_module_1 = require("./habits/habits.module");
 const users_module_1 = require("./users/users.module");
+const auth_module_1 = require("./auth/auth.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [habits_module_1.HabitsModule, users_module_1.UsersModule],
+        imports: [habits_module_1.HabitsModule, users_module_1.UsersModule, auth_module_1.AuthModule],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map
