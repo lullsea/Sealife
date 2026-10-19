@@ -10,12 +10,14 @@ export class UsersService {
 
   // SELECT * FROM "User"
   findAll(): Promise<User[]> {
-    return this.prisma.user.findMany();
+    return this.prisma.user.findMany({});
   }
 
   async findOne(id: number): Promise<User> {
     // findUnique resolves to null (not an error) when no row matches.
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
     if (!user) {
       // Nest turns this into a 404 response automatically.
       throw new NotFoundException(`User ${id} not found`);

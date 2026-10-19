@@ -4,4 +4,5 @@ model User {
   name      String?
   createdAt DateTime @default(now())
   habits    Habit[]
+  password  String
 }
