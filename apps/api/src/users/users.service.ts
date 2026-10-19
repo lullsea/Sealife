@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDTO } from './dto/create-user';
 import type { User } from '../generated/prisma/client';
 import { UpdateUserDTO } from './dto/update-user';
+import * as argon2 from 'argon2';
 
 @Injectable()
 export class UsersService {
@@ -12,7 +17,6 @@ export class UsersService {
   findAll(): Promise<User[]> {
     return this.prisma.user.findMany({});
   }
-
   async findOne(id: number): Promise<User> {
     // findUnique resolves to null (not an error) when no row matches.
     const user = await this.prisma.user.findUnique({
@@ -25,9 +29,13 @@ export class UsersService {
     return user;
   }
 
-  create(dto: CreateUserDTO): Promise<User> {
+  async create(dto: CreateUserDTO): Promise<User> {
+    const hash = await argon2.hash(dto.password);
     return this.prisma.user.create({
-      data: dto,
+      data: {
+        ...dto,
+        password: hash,
+      },
     });
   }
 
@@ -40,5 +48,23 @@ export class UsersService {
 
   delete(id: number) {
     return this.prisma.user.delete({ where: { id } });
+  }
+
+  async validateCredentials(email: string, password: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    const isPasswordValid = await argon2.verify(user.password, password);
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    return user;
   }
 }

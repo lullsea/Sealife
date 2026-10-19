@@ -1,9 +1,7 @@
-import { IsNotEmpty, IsOptional, IsString, IsEmail } from 'class-validator';
-import { CreateHabitDTO } from '../../habits/dto/create-habit';
-import { PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { CreateUserDTO } from './create-user';
 
-export class UpdateUserDTO extends PartialType(CreateHabitDTO) {
-  @IsString()
-  @IsOptional()
-  readonly name?: string;
-}
+// Password changes go through the dedicated reset-password endpoint.
+export class UpdateUserDTO extends PartialType(
+  OmitType(CreateUserDTO, ['password'] as const),
+) {}
