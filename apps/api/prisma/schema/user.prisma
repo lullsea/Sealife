@@ -5,4 +5,6 @@ model User {
   createdAt DateTime @default(now())
   habits    Habit[]
   password  String
+
+  refreshTokens RefreshToken[]
 }
