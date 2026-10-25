@@ -1,9 +1,11 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { createHash, randomBytes } from 'crypto';
 import { UsersService } from '../users/users.service';
 import { LoginDTO } from './dto/login';
-import { PrismaService } from '../prisma/prisma.service';
+import { RefreshToken } from './refresh-token.entity';
 
 const REFRESH_TOKEN_TTL_DAYS = 7;
 const REFRESH_TOKEN_TTL_MS = REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000;
@@ -22,7 +24,7 @@ function generateRefreshToken(): string {
 }
 
 // SHA-256 is deterministic, so the same token always gives the same hash
-// and we can look it up with findUnique({ where: { tokenHash } }).
+// and we can look it up with findOne({ where: { tokenHash } }).
 function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
@@ -32,7 +34,8 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-    private readonly prisma: PrismaService,
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokens: Repository<RefreshToken>,
   ) {}
 
   // /auth/login
@@ -46,9 +49,9 @@ export class AuthService {
   async refresh(token: string): Promise<TwinPair> {
     const hashed = hashToken(token);
     // include the user: issueTokens needs their email, the row only has userId.
-    const refreshToken = await this.prisma.refreshToken.findUnique({
+    const refreshToken = await this.refreshTokens.findOne({
       where: { tokenHash: hashed },
-      include: { user: true },
+      relations: { user: true },
     });
 
     if (!refreshToken) {
@@ -66,15 +69,15 @@ export class AuthService {
       throw new UnauthorizedException(INVALID_REFRESH_TOKEN);
     }
 
-    // Rotation: revoke only this token. revokedAt: null makes the check and
+    // Rotation: revoke only this token. revokedAt IS NULL makes the check and
     // the write one atomic step, so two concurrent requests can't both pass (§7).
-    const { count } = await this.prisma.refreshToken.updateMany({
-      where: { id: refreshToken.id, revokedAt: null },
-      data: { revokedAt: new Date() },
-    });
+    const { affected } = await this.refreshTokens.update(
+      { id: refreshToken.id, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
 
     // Another request revoked it between our read and our write: treat as reuse.
-    if (count === 0) {
+    if (affected === 0) {
       await this.revokeAllForUser(refreshToken.userId);
       throw new UnauthorizedException(INVALID_REFRESH_TOKEN);
     }
@@ -83,10 +86,10 @@ export class AuthService {
   }
 
   private async revokeAllForUser(userId: number): Promise<void> {
-    await this.prisma.refreshToken.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    });
+    await this.refreshTokens.update(
+      { userId, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
   }
 
   // /auth/logout
@@ -94,10 +97,10 @@ export class AuthService {
   // revoked tokens match nothing and that's fine: no error, so the response
   // never reveals whether a token existed.
   async logout(token: string): Promise<void> {
-    await this.prisma.refreshToken.updateMany({
-      where: { tokenHash: hashToken(token), revokedAt: null },
-      data: { revokedAt: new Date() },
-    });
+    await this.refreshTokens.update(
+      { tokenHash: hashToken(token), revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
   }
 
   private async issueTokens(user: {
@@ -115,12 +118,10 @@ export class AuthService {
 
     // Only the hash is stored. await it: without it, the response could go
     // out before the row exists, and a DB error would go unnoticed.
-    await this.prisma.refreshToken.create({
-      data: {
-        tokenHash: hashed,
-        userId: user.id,
-        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
-      },
+    await this.refreshTokens.insert({
+      tokenHash: hashed,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
     });
 
     // The raw refresh token goes to the client. After this, the server

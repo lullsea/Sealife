@@ -8,6 +8,7 @@ import {
   type Relation,
 } from 'typeorm';
 import { Habit } from '../habits/habit.entity';
+import { RefreshToken } from '../auth/refresh-token.entity';
 
 // Table and constraint names match the schema Prisma created, so existing
 // databases keep working and migration:generate shows no spurious diff.
@@ -33,4 +34,7 @@ export class User {
   // Back-reference: not a column, only loaded when you ask for the relation.
   @OneToMany(() => Habit, (habit) => habit.user)
   habits: Relation<Habit>[];
+
+  @OneToMany(() => RefreshToken, (token) => token.user)
+  refreshTokens: Relation<RefreshToken>[];
 }

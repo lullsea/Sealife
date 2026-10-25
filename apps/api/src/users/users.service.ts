@@ -10,7 +10,7 @@ import { User } from './user.entity';
 import { UpdateUserDTO } from './dto/update-user';
 import * as argon2 from 'argon2';
 
-export type PublicUser = Omit<User, 'password' | 'habits'>;
+export type PublicUser = Omit<User, 'password' | 'habits' | 'refreshTokens'>;
 
 @Injectable()
 export class UsersService {
