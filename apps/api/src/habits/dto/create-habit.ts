@@ -6,9 +6,9 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-// Prisma generates a runtime object AND a type with the same name, so this one
-// import works both as a value (for @IsEnum) and as a type annotation.
-import { HabitFrequency } from '../../generated/prisma/enums';
+// A TS enum is a runtime object AND a type, so this one import works both
+// as a value (for @IsEnum) and as a type annotation.
+import { HabitFrequency } from '../habit-frequency.enum';
 
 export class CreateHabitDTO {
   @IsString()
@@ -27,9 +27,9 @@ export class CreateHabitDTO {
   @IsEnum(HabitFrequency)
   readonly frequency?: HabitFrequency;
 
-  // Habit.userId is a required FK since the add_user migration, so Prisma's
-  // HabitCreateInput demands an owner. @IsInt() rejects "abc" and 1.5; a
-  // nonexistent id still passes validation and fails at the DB (P2003).
+  // Habit.userId is a required FK (NOT NULL), so every habit needs an owner.
+  // @IsInt() rejects "abc" and 1.5; a nonexistent id still passes validation
+  // and fails at the DB with a foreign key violation.
   // TEMPORARY: in Stage 3 the owner comes from the JWT, not the body.
   @IsInt()
   readonly userId: number;
