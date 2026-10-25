@@ -8,7 +8,8 @@ import {
   Post,
   Delete,
 } from '@nestjs/common';
-import type { Habit, HabitCompletion } from '../generated/prisma/client';
+import type { Habit } from './habit.entity';
+import type { HabitCompletion } from './habit-completion.entity';
 import { HabitsService } from './habits.service';
 import { CreateHabitDTO } from './dto/create-habit';
 import { UpdateHabitDTO } from './dto/update-habit';

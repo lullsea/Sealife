@@ -9,7 +9,7 @@ This isn't a product. It's a playground that grows in layers, where each stage a
 | Stage | Topic                                      | Focus                                      |
 | :---: | ------------------------------------------ | ------------------------------------------ |
 |   1   | [NestJS](#stage-1--nestjs)                 | Framework fundamentals                     |
-|   2   | [Database](#stage-2--database)             | Prisma + PostgreSQL                        |
+|   2   | [Database](#stage-2--database)             | TypeORM + PostgreSQL                       |
 |   3   | [Authentication](#stage-3--authentication) | JWT, guards, roles                         |
 |   4   | [Redis](#stage-4--redis)                   | Caching, rate limiting, locks              |
 |   5   | [Kafka](#stage-5--kafka)                   | Event-driven architecture                  |
@@ -32,7 +32,7 @@ Learn, in this order:
 ## Stage 2 — Database
 
 ```
-NestJS → Prisma → PostgreSQL
+NestJS → TypeORM → PostgreSQL
 ```
 
 **Build** these models:

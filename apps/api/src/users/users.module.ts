@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { PrismaModule } from '../prisma/prisma.module';
+import { User } from './user.entity';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [TypeOrmModule.forFeature([User])], // makes Repository<User> injectable here
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService], // lets AuthModule inject it

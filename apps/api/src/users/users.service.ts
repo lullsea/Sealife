@@ -3,27 +3,30 @@ import {
   UnauthorizedException,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateUserDTO } from './dto/create-user';
-import type { User } from '../generated/prisma/client';
+import { User } from './user.entity';
 import { UpdateUserDTO } from './dto/update-user';
 import * as argon2 from 'argon2';
 
-export type PublicUser = Omit<User, 'password'>;
+export type PublicUser = Omit<User, 'password' | 'habits'>;
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  // Nest injects the Repository<User> registered by TypeOrmModule.forFeature.
+  constructor(
+    @InjectRepository(User) private readonly users: Repository<User>,
+  ) {}
 
-  // SELECT * FROM "User"
+  // SELECT * FROM "User" (password excluded by select: false on the entity)
   findAll(): Promise<PublicUser[]> {
-    return this.prisma.user.findMany({});
+    return this.users.find();
   }
+
   async findOne(id: number): Promise<PublicUser> {
-    // findUnique resolves to null (not an error) when no row matches.
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-    });
+    // findOneBy resolves to null (not an error) when no row matches.
+    const user = await this.users.findOneBy({ id });
     if (!user) {
       // Nest turns this into a 404 response automatically.
       throw new NotFoundException(`User ${id} not found`);
@@ -33,34 +36,38 @@ export class UsersService {
 
   async create(dto: CreateUserDTO): Promise<PublicUser> {
     const hash = await argon2.hash(dto.password);
-    return this.prisma.user.create({
-      data: {
-        ...dto,
-        password: hash,
-      },
-    });
+    const { id } = await this.users.save(
+      this.users.create({ ...dto, password: hash }),
+    );
+    // Re-read so the response has DB defaults filled in and no password hash.
+    return this.findOne(id);
   }
 
-  update(id: number, dto: UpdateUserDTO): Promise<PublicUser> {
-    return this.prisma.user.update({
-      where: { id },
-      data: dto,
-    });
+  async update(id: number, dto: UpdateUserDTO): Promise<PublicUser> {
+    // preload = load the row and merge dto over it; undefined if it doesn't exist.
+    const user = await this.users.preload({ id, ...dto });
+    if (!user) {
+      throw new NotFoundException(`User ${id} not found`);
+    }
+    return this.users.save(user);
   }
 
-  delete(id: number): Promise<PublicUser> {
-    return this.prisma.user.delete({ where: { id } });
+  async delete(id: number): Promise<PublicUser> {
+    const user = await this.findOne(id); // 404 if the user doesn't exist
+    await this.users.delete(id);
+    return user;
   }
 
   async validateCredentials(
     email: string,
     password: string,
   ): Promise<PublicUser> {
-    // The global omit hides password; opt back in since we need the hash here.
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-      omit: { password: false },
-    });
+    // select: false hides password; opt back in since we need the hash here.
+    const user = await this.users
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.email = :email', { email })
+      .getOne();
 
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
