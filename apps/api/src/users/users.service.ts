@@ -19,11 +19,6 @@ export class UsersService {
     @InjectRepository(User) private readonly users: Repository<User>,
   ) {}
 
-  // SELECT * FROM "User" (password excluded by select: false on the entity)
-  findAll(): Promise<PublicUser[]> {
-    return this.users.find();
-  }
-
   async findOne(id: number): Promise<PublicUser> {
     // findOneBy resolves to null (not an error) when no row matches.
     const user = await this.users.findOneBy({ id });

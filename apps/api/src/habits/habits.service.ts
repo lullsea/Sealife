@@ -18,13 +18,13 @@ export class HabitsService {
   ) {}
 
   // SELECT * FROM "Habit"
-  findAll(): Promise<Habit[]> {
-    return this.habits.find();
+  findAll(userId: number): Promise<Habit[]> {
+    return this.habits.find({ where: { userId } });
   }
 
-  async findOne(id: number): Promise<Habit> {
+  async findOne(id: number, userId: number): Promise<Habit> {
     // findOneBy resolves to null (not an error) when no row matches.
-    const habit = await this.habits.findOneBy({ id });
+    const habit = await this.habits.findOneBy({ id, userId });
     if (!habit) {
       // Nest turns this into a 404 response automatically.
       throw new NotFoundException(`Habit ${id} not found`);
@@ -33,39 +33,44 @@ export class HabitsService {
   }
 
   // INSERT INTO "Habit". The DB assigns id and createdAt.
-  async create(dto: CreateHabitDTO): Promise<Habit> {
+  async create(userId: number, dto: CreateHabitDTO): Promise<Habit> {
     // create() only builds the entity in memory; save() runs the INSERT.
-    const { id } = await this.habits.save(this.habits.create(dto));
+    const { id } = await this.habits.save(
+      this.habits.create({ ...dto, userId }),
+    );
     // Re-read so nullable columns come back as null instead of missing.
-    return this.findOne(id);
+    return this.findOne(id, userId);
   }
 
-  async update(id: number, dto: UpdateHabitDTO): Promise<Habit> {
-    // preload = load the row and merge dto over it; undefined if it doesn't exist.
-    const habit = await this.habits.preload({ id, ...dto });
-    if (!habit) {
-      throw new NotFoundException(`Habit ${id} not found`);
-    }
-    return this.habits.save(habit);
+  async update(
+    id: number,
+    userId: number,
+    dto: UpdateHabitDTO,
+  ): Promise<Habit> {
+    const habit = await this.findOne(id, userId); // 404 if missing or not yours
+    return this.habits.save(this.habits.merge(habit, dto));
   }
 
-  async delete(id: number): Promise<Habit> {
-    const habit = await this.findOne(id); // 404 if the habit doesn't exist
+  async delete(id: number, userId: number): Promise<Habit> {
+    const habit = await this.findOne(id, userId); // 404 if the habit doesn't exist
     await this.habits.delete(id);
     return habit;
   }
 
   // INSERT INTO "HabitCompletion". findOne throws 404 if the habit is missing,
   // so no null check is needed here.
-  async complete(habitId: number): Promise<HabitCompletion> {
-    await this.findOne(habitId);
+  async complete(habitId: number, userId: number): Promise<HabitCompletion> {
+    await this.findOne(habitId, userId);
     return this.completions.save(this.completions.create({ habitId }));
   }
 
   // SELECT * FROM "HabitCompletion" WHERE "habitId" = ? ORDER BY "completedAt" DESC
   // Uses the "HabitCompletion_habitId_idx" index from the entity.
-  async findCompletions(habitId: number): Promise<HabitCompletion[]> {
-    await this.findOne(habitId); // 404 if the habit doesn't exist
+  async findCompletions(
+    habitId: number,
+    userId: number,
+  ): Promise<HabitCompletion[]> {
+    await this.findOne(habitId, userId); // 404 if the habit doesn't exist
     return this.completions.find({
       where: { habitId },
       order: { completedAt: 'DESC' },

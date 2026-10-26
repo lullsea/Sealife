@@ -1,4 +1,4 @@
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -14,9 +14,12 @@ import type { HabitCompletion } from './habit-completion.entity';
 import { HabitsService } from './habits.service';
 import { CreateHabitDTO } from './dto/create-habit.dto';
 import { UpdateHabitDTO } from './dto/update-habit.dto';
+import type { AuthUser } from '../auth/jwt-payload';
+import { CurrentUser } from '../auth/current-user.decorator';
 
 // HTTP layer only: map routes to service calls. Every route here starts with /habits.
-@ApiTags('habits')
+@ApiBearerAuth() // Requires an authentication token to access this namespace
+@ApiTags('habits') // Swagger Namespacing
 @Controller('habits')
 export class HabitsController {
   // Nest injects the HabitsService instance (Dependency Injection, next lesson).
@@ -24,21 +27,27 @@ export class HabitsController {
 
   // GET /habits
   @Get()
-  findAll(): Promise<Habit[]> {
-    return this.habitsService.findAll();
+  findAll(@CurrentUser() user: AuthUser): Promise<Habit[]> {
+    return this.habitsService.findAll(user.id);
   }
 
   // GET /habits/:id. URL params are strings; ParseIntPipe converts to a number
   // and returns 400 if it isn't one.
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number): Promise<Habit> {
-    return this.habitsService.findOne(id);
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthUser,
+  ): Promise<Habit> {
+    return this.habitsService.findOne(id, user.id);
   }
 
   // POST /habits with body { "name": "...", "description"?: "..." }
   @Post()
-  create(@Body() dto: CreateHabitDTO): Promise<Habit> {
-    return this.habitsService.create(dto);
+  create(
+    @Body() dto: CreateHabitDTO,
+    @CurrentUser() user: AuthUser,
+  ): Promise<Habit> {
+    return this.habitsService.create(user.id, dto);
   }
 
   // POST /habits with body { "name": "...", "description"?: "..." }
@@ -46,24 +55,29 @@ export class HabitsController {
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateHabitDTO,
+    @CurrentUser() user: AuthUser,
   ): Promise<Habit> {
-    return this.habitsService.update(id, dto);
+    return this.habitsService.update(id, user.id, dto);
   }
 
   @Delete(':id')
-  delete(@Param('id', ParseIntPipe) id: number) {
-    return this.habitsService.delete(id);
+  delete(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthUser) {
+    return this.habitsService.delete(id, user.id);
   }
   // POST /habits/:id/complete. Records one completion; 404 if the habit is missing.
   @Post(':id/complete')
-  complete(@Param('id', ParseIntPipe) id: number): Promise<HabitCompletion> {
-    return this.habitsService.complete(id);
+  complete(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthUser,
+  ): Promise<HabitCompletion> {
+    return this.habitsService.complete(id, user.id);
   }
   // GET /habits/:id/completions, newest first.
   @Get(':id/completions')
   findCompletions(
     @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthUser,
   ): Promise<HabitCompletion[]> {
-    return this.habitsService.findCompletions(id);
+    return this.habitsService.findCompletions(id, user.id);
   }
 }
