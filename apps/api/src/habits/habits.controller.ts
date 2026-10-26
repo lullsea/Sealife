@@ -50,7 +50,7 @@ export class HabitsController {
     return this.habitsService.create(user.id, dto);
   }
 
-  // POST /habits with body { "name": "...", "description"?: "..." }
+  // PUT /habits with body { "name": "...", "description"?: "..." }
   @Put(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -60,6 +60,7 @@ export class HabitsController {
     return this.habitsService.update(id, user.id, dto);
   }
 
+  // DELETE habit
   @Delete(':id')
   delete(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthUser) {
     return this.habitsService.delete(id, user.id);
