@@ -45,7 +45,7 @@ NestJS → TypeORM → PostgreSQL
 
 - [x] JWT
 - [x] Refresh tokens
-- [ ] Guards
+- [x] Guards
 - [ ] RBAC
 - [x] Password hashing
 
