@@ -1,5 +1,5 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateHabitDTO } from './create-habit';
+import { PartialType } from '@nestjs/swagger';
+import { CreateHabitDTO } from './create-habit.dto';
 import { IsBoolean, IsOptional } from 'class-validator';
 
 // PartialType copies every property AND its validation decorators from
@@ -12,5 +12,5 @@ import { IsBoolean, IsOptional } from 'class-validator';
 export class UpdateHabitDTO extends PartialType(CreateHabitDTO) {
   @IsBoolean()
   @IsOptional()
-  readonly archived: boolean;
+  readonly archived?: boolean;
 }

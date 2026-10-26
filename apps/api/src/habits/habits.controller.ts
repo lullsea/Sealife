@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -11,10 +12,11 @@ import {
 import type { Habit } from './habit.entity';
 import type { HabitCompletion } from './habit-completion.entity';
 import { HabitsService } from './habits.service';
-import { CreateHabitDTO } from './dto/create-habit';
-import { UpdateHabitDTO } from './dto/update-habit';
+import { CreateHabitDTO } from './dto/create-habit.dto';
+import { UpdateHabitDTO } from './dto/update-habit.dto';
 
 // HTTP layer only: map routes to service calls. Every route here starts with /habits.
+@ApiTags('habits')
 @Controller('habits')
 export class HabitsController {
   // Nest injects the HabitsService instance (Dependency Injection, next lesson).

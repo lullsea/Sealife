@@ -1,3 +1,4 @@
+import { ApiHideProperty } from '@nestjs/swagger';
 import {
   Column,
   CreateDateColumn,
@@ -28,6 +29,7 @@ export class User {
   createdAt: Date;
 
   // select: false = left out of every query unless explicitly asked for.
+  @ApiHideProperty()
   @Column({ type: 'text', select: false })
   password: string;
 

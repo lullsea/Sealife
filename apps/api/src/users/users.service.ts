@@ -5,9 +5,9 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CreateUserDTO } from './dto/create-user';
+import { CreateUserDTO } from './dto/create-user.dto';
 import { User } from './user.entity';
-import { UpdateUserDTO } from './dto/update-user';
+import { UpdateUserDTO } from './dto/update-user.dto';
 import * as argon2 from 'argon2';
 
 export type PublicUser = Omit<User, 'password' | 'habits' | 'refreshTokens'>;

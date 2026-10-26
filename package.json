@@ -12,7 +12,8 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
-    "@types/node": "^26.6.4"
+    "@types/node": "^26.6.4",
+    "typescript": "^6.0.3"
   },
   "allowScripts": {
     "argon2@0.45.1": true

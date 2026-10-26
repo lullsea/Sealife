@@ -1,5 +1,5 @@
-import { OmitType, PartialType } from '@nestjs/mapped-types';
-import { CreateUserDTO } from './create-user';
+import { OmitType, PartialType } from '@nestjs/swagger';
+import { CreateUserDTO } from './create-user.dto';
 
 // Password changes go through the dedicated reset-password endpoint.
 export class UpdateUserDTO extends PartialType(

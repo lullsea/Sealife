@@ -1,3 +1,4 @@
+import { ApiHideProperty } from '@nestjs/swagger';
 import {
   Column,
   CreateDateColumn,
@@ -17,6 +18,7 @@ export class RefreshToken {
 
   // Only the SHA-256 hash is stored, never the raw token. Unique so we can
   // look a token up by its hash.
+  @ApiHideProperty()
   @Index('RefreshToken_tokenHash_key', { unique: true })
   @Column({ type: 'text' })
   tokenHash: string;

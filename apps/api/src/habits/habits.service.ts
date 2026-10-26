@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CreateHabitDTO } from './dto/create-habit';
+import { CreateHabitDTO } from './dto/create-habit.dto';
 import { Habit } from './habit.entity';
 import { HabitCompletion } from './habit-completion.entity';
-import { UpdateHabitDTO } from './dto/update-habit';
+import { UpdateHabitDTO } from './dto/update-habit.dto';
 
 // Business logic lives here. No HTTP concepts (requests, status codes, routes).
 // @Injectable() lets Nest create this class and inject it into others.

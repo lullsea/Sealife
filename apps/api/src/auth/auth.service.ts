@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import { createHash, randomBytes } from 'crypto';
 import { UsersService } from '../users/users.service';
-import { LoginDTO } from './dto/login';
+import { LoginDTO } from './dto/login.dto';
 import { RefreshToken } from './refresh-token.entity';
 
 const REFRESH_TOKEN_TTL_DAYS = 7;
