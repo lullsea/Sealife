@@ -2,11 +2,12 @@ import {
   Injectable,
   UnauthorizedException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateUserDTO } from './dto/create-user.dto';
-import { User } from './user.entity';
+import { User, UserRole } from './user.entity';
 import { UpdateUserDTO } from './dto/update-user.dto';
 import * as argon2 from 'argon2';
 
@@ -18,6 +19,10 @@ export class UsersService {
   constructor(
     @InjectRepository(User) private readonly users: Repository<User>,
   ) {}
+
+  async findAll(): Promise<User[]> {
+    return this.users.find();
+  }
 
   async findOne(id: number): Promise<PublicUser> {
     // findOneBy resolves to null (not an error) when no row matches.
@@ -77,5 +82,24 @@ export class UsersService {
     // Strip the hash before the user leaves this method.
     const { password: _, ...publicUser } = user;
     return publicUser;
+  }
+
+  // Set the role for a user
+  async setRole(
+    id: number,
+    role: UserRole,
+    actorId: number,
+  ): Promise<PublicUser> {
+    if (id === actorId)
+      throw new ForbiddenException(
+        'You are not authorized to change your own role.',
+      );
+    const { affected } = await this.users.update({ id }, { role });
+    // In the case where the user wasn't found
+    if (!affected) {
+      throw new NotFoundException(`User ${id} not found.`);
+    }
+
+    return this.findOne(id);
   }
 }
