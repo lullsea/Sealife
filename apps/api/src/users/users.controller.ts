@@ -14,17 +14,19 @@ import type { AuthUser } from '../auth/jwt-payload';
 export class UsersController {
   constructor(private readonly userService: UsersService) {}
 
-  // GET /users/:id
+  // GET /users/me
   @Get('/me')
   findOne(@CurrentUser() user: AuthUser): Promise<PublicUser> {
     return this.userService.findOne(user.id);
   }
 
-  // DELETE /users/:id
+  // DELETE /users/me
   @Delete('/me')
   delete(@CurrentUser() user: AuthUser): Promise<PublicUser> {
     return this.userService.delete(user.id);
   }
+
+  // PUT /users/me
   @Put('/me')
   update(@CurrentUser() user: AuthUser, @Body() dto: UpdateUserDTO) {
     return this.userService.update(user.id, dto);

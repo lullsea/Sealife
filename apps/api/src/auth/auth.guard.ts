@@ -9,6 +9,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { IS_PUBLIC_KEY } from './public.decorator';
 import type { JWTPayload } from './jwt-payload';
+import { AuthRequest } from './jwt-payload';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -26,7 +27,9 @@ export class AuthGuard implements CanActivate {
     if (isPublic) return true;
 
     // Switch context to http
-    const httpReq = context.switchToHttp().getRequest();
+    const httpReq: AuthRequest = context
+      .switchToHttp()
+      .getRequest<AuthRequest>();
     const token = extractBearerToken(httpReq);
     // If no token throw an unauthorized error
     if (!token) {

@@ -26,11 +26,4 @@ export class CreateHabitDTO {
   @IsOptional()
   @IsEnum(HabitFrequency)
   readonly frequency?: HabitFrequency;
-
-  // Habit.userId is a required FK (NOT NULL), so every habit needs an owner.
-  // @IsInt() rejects "abc" and 1.5; a nonexistent id still passes validation
-  // and fails at the DB with a foreign key violation.
-  // TEMPORARY: in Stage 3 the owner comes from the JWT, not the body.
-  @IsInt()
-  readonly userId: number;
 }
