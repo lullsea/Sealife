@@ -11,6 +11,11 @@ import {
 import { Habit } from '../habits/habit.entity';
 import { RefreshToken } from '../auth/refresh-token.entity';
 
+export enum UserRole {
+  USER = 'USER',
+  ADMIN = 'ADMIN',
+}
+
 // Table and constraint names match the schema Prisma created, so existing
 // databases keep working and migration:generate shows no spurious diff.
 @Entity('User')
@@ -39,4 +44,12 @@ export class User {
 
   @OneToMany(() => RefreshToken, (token) => token.user)
   refreshTokens: Relation<RefreshToken>[];
+
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+    enumName: 'UserRole',
+    default: UserRole.USER,
+  })
+  role: UserRole;
 }
