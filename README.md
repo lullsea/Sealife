@@ -46,7 +46,7 @@ NestJS → TypeORM → PostgreSQL
 - [x] JWT
 - [x] Refresh tokens
 - [x] Guards
-- [ ] RBAC
+- [x] RBAC
 - [x] Password hashing
 
 ## Stage 4 — Redis
