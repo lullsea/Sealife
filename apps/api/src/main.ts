@@ -14,6 +14,7 @@ async function bootstrap() {
     }),
   );
 
+  app.setGlobalPrefix('api');
   // Swagger UI at /docs, raw OpenAPI JSON at /docs-json.
   // addBearerAuth() adds the "Authorize" button for JWT-protected routes.
   const config = new DocumentBuilder()
@@ -21,7 +22,7 @@ async function bootstrap() {
     .setVersion('0.0.1')
     .addBearerAuth()
     .build();
-  SwaggerModule.setup('docs', app, () =>
+  SwaggerModule.setup('api/docs', app, () =>
     SwaggerModule.createDocument(app, config),
   );
 
