@@ -106,11 +106,13 @@ export class AuthService {
   private async issueTokens(user: {
     id: number;
     email: string;
+    role: string;
   }): Promise<TwinPair> {
     // Same JWT login used to sign: short-lived, checked by signature only.
     const accessToken = await this.jwtService.signAsync({
       sub: user.id,
       email: user.email,
+      role: user.role,
     });
 
     const refreshToken = generateRefreshToken();

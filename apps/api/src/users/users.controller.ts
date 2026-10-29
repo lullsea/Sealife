@@ -26,21 +26,18 @@ export class UsersController {
   constructor(private readonly userService: UsersService) {}
 
   // GET /users/me
-  @Roles(UserRole.USER)
   @Get('/me')
   findOne(@CurrentUser() user: AuthUser): Promise<PublicUser> {
     return this.userService.findOne(user.id);
   }
 
   // DELETE /users/me
-  @Roles(UserRole.USER)
   @Delete('/me')
   delete(@CurrentUser() user: AuthUser): Promise<PublicUser> {
     return this.userService.delete(user.id);
   }
 
   // PUT /users/me
-  @Roles(UserRole.USER)
   @Put('/me')
   update(@CurrentUser() user: AuthUser, @Body() dto: UpdateUserDTO) {
     return this.userService.update(user.id, dto);
