@@ -35,7 +35,7 @@ export class Habit {
   @Column({ type: 'text', nullable: true }) // nullable = optional
   description: string | null;
 
-  @CreateDateColumn({ type: 'timestamp', precision: 3 }) // DB fills in the timestamp
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 }) // DB fills in the timestamp
   createdAt: Date;
 
   // Back-reference: not a column, just lets you load `relations: { completions: true }`.

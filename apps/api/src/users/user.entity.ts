@@ -30,7 +30,7 @@ export class User {
   @Column({ type: 'text', nullable: true })
   name: string | null;
 
-  @CreateDateColumn({ type: 'timestamp', precision: 3 })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   createdAt: Date;
 
   // select: false = left out of every query unless explicitly asked for.

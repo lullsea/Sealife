@@ -39,12 +39,12 @@ export class RefreshToken {
   })
   user: Relation<User>;
 
-  @Column({ type: 'timestamp', precision: 3 })
+  @Column({ type: 'timestamptz', precision: 3 })
   expiresAt: Date;
 
-  @Column({ type: 'timestamp', precision: 3, nullable: true }) // null = still usable
+  @Column({ type: 'timestamptz', precision: 3, nullable: true }) // null = still usable
   revokedAt: Date | null;
 
-  @CreateDateColumn({ type: 'timestamp', precision: 3 })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   createdAt: Date;
 }

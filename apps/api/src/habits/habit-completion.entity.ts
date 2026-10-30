@@ -15,7 +15,7 @@ export class HabitCompletion {
   @PrimaryGeneratedColumn({ primaryKeyConstraintName: 'HabitCompletion_pkey' })
   id: number;
 
-  @CreateDateColumn({ type: 'timestamp', precision: 3 })
+  @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   completedAt: Date;
 
   // The actual foreign key column in the DB.
