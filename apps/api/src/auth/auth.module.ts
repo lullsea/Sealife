@@ -8,6 +8,9 @@ import { RefreshToken } from './refresh-token.entity';
 import { AuthGuard } from './auth.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './roles.guard';
+import { REDIS } from '../redis/redis.client';
+import { RateLimitGuard } from '../rate-limit/rate-limit.guard';
+import { RedisModule } from '../redis/redis.module';
 
 // Groups everything for logging in and issuing tokens.
 @Module({
