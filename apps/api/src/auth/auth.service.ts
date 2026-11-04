@@ -2,10 +2,12 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
-import { createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes, randomUUID } from 'crypto';
 import { UsersService } from '../users/users.service';
 import { LoginDTO } from './dto/login.dto';
 import { RefreshToken } from './refresh-token.entity';
+import { TokenRevocationService } from './token-revocation.service';
+import { AccessToken } from './jwt-payload';
 
 const REFRESH_TOKEN_TTL_DAYS = 7;
 const REFRESH_TOKEN_TTL_MS = REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000;
@@ -36,6 +38,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     @InjectRepository(RefreshToken)
     private readonly refreshTokens: Repository<RefreshToken>,
+    private readonly revocation: TokenRevocationService,
   ) {}
 
   // /auth/login
@@ -90,17 +93,23 @@ export class AuthService {
       { userId, revokedAt: IsNull() },
       { revokedAt: new Date() },
     );
+    await this.revocation.revokeAllTokens(userId);
   }
 
   // /auth/logout
   // Revokes this one token (other devices stay logged in). Unknown or already
   // revoked tokens match nothing and that's fine: no error, so the response
   // never reveals whether a token existed.
-  async logout(token: string): Promise<void> {
+  async logout(
+    refreshToken: string,
+    userId: number,
+    accessToken: AccessToken,
+  ): Promise<void> {
     await this.refreshTokens.update(
-      { tokenHash: hashToken(token), revokedAt: IsNull() },
+      { tokenHash: hashToken(refreshToken), userId, revokedAt: IsNull() },
       { revokedAt: new Date() },
     );
+    await this.revocation.revokeToken(accessToken.jti, accessToken.exp);
   }
 
   private async issueTokens(user: {
@@ -109,11 +118,16 @@ export class AuthService {
     role: string;
   }): Promise<TwinPair> {
     // Same JWT login used to sign: short-lived, checked by signature only.
-    const accessToken = await this.jwtService.signAsync({
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    });
+    const accessToken = await this.jwtService.signAsync(
+      {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      {
+        jwtid: randomUUID(), // JTI claim
+      },
+    );
 
     const refreshToken = generateRefreshToken();
     const hashed = hashToken(refreshToken);

@@ -10,12 +10,14 @@ import { JwtService } from '@nestjs/jwt';
 import { IS_PUBLIC_KEY } from './public.decorator';
 import type { JWTPayload } from './jwt-payload';
 import { AuthRequest } from './jwt-payload';
+import { TokenRevocationService } from './token-revocation.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly reflector: Reflector,
+    private readonly revocation: TokenRevocationService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -36,13 +38,17 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Missing Access Token.');
     }
 
+    let payload: JWTPayload;
     try {
-      const payload = await this.jwtService.verifyAsync<JWTPayload>(token);
+      payload = await this.jwtService.verifyAsync<JWTPayload>(token);
+      const isTokenRevoked = await this.revocation.isRevoked(payload);
+      if (!payload.jti || isTokenRevoked) throw new UnauthorizedException();
       httpReq.user = {
         id: payload.sub,
         email: payload.email,
         role: payload.role,
       };
+      httpReq.accessToken = { jti: payload.jti, exp: payload.exp };
     } catch {
       // Unexpected error
       throw new UnauthorizedException();

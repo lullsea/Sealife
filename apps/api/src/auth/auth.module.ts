@@ -8,9 +8,8 @@ import { RefreshToken } from './refresh-token.entity';
 import { AuthGuard } from './auth.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './roles.guard';
-import { REDIS } from '../redis/redis.client';
-import { RateLimitGuard } from '../rate-limit/rate-limit.guard';
-import { RedisModule } from '../redis/redis.module';
+import { ACCESS_TOKEN_TTL_SECONDS } from './jwt-payload';
+import { TokenRevocationModule } from './token-revocation.module';
 
 // Groups everything for logging in and issuing tokens.
 @Module({
@@ -22,8 +21,9 @@ import { RedisModule } from '../redis/redis.module';
     // Makes JwtService injectable in this module, pre-configured with our secret.
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '15m' },
+      signOptions: { expiresIn: ACCESS_TOKEN_TTL_SECONDS },
     }),
+    TokenRevocationModule,
   ],
   controllers: [AuthController],
   providers: [

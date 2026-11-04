@@ -10,6 +10,7 @@ import { CreateUserDTO } from './dto/create-user.dto';
 import { User, UserRole } from './user.entity';
 import { UpdateUserDTO } from './dto/update-user.dto';
 import * as argon2 from 'argon2';
+import { TokenRevocationService } from '../auth/token-revocation.service';
 
 export type PublicUser = Omit<User, 'password' | 'habits' | 'refreshTokens'>;
 
@@ -18,6 +19,7 @@ export class UsersService {
   // Nest injects the Repository<User> registered by TypeOrmModule.forFeature.
   constructor(
     @InjectRepository(User) private readonly users: Repository<User>,
+    private readonly revocation: TokenRevocationService,
   ) {}
 
   async findAll(): Promise<User[]> {
@@ -55,6 +57,7 @@ export class UsersService {
   async delete(id: number): Promise<PublicUser> {
     const user = await this.findOne(id); // 404 if the user doesn't exist
     await this.users.delete(id);
+    await this.revocation.revokeAllTokens(id);
     return user;
   }
 
@@ -99,6 +102,7 @@ export class UsersService {
     if (!affected) {
       throw new NotFoundException(`User ${id} not found.`);
     }
+    await this.revocation.revokeAllTokens(id);
 
     return this.findOne(id);
   }

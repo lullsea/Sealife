@@ -24,21 +24,24 @@ export class QueryFailedExceptionsFilter implements ExceptionFilter {
 
     // let status = HttpStatus.INTERNAL_SERVER_ERROR;
     // let message = 'Internal server error';
-    const FIXED_RESPONSES = {
-      '23505': {
-        status: HttpStatus.CONFLICT,
-        message: 'Resource already exists',
-      },
-      '23503': {
-        status: HttpStatus.CONFLICT,
-        message: 'Related resource does not exist',
-      },
-    };
+    const FIXED_RESPONSES: Record<string, { status: number; message: string }> =
+      {
+        '23505': {
+          status: HttpStatus.CONFLICT,
+          message: 'Resource already exists',
+        },
+        '23503': {
+          status: HttpStatus.CONFLICT,
+          message: 'Related resource does not exist',
+        },
+      };
 
-    const {
-      status = HttpStatus.INTERNAL_SERVER_ERROR,
-      message = 'Internal server error',
-    } = FIXED_RESPONSES[driverError.code as keyof unknown];
+    const fixedResponse = driverError.code
+      ? FIXED_RESPONSES[driverError.code]
+      : undefined;
+
+    const status = fixedResponse?.status ?? HttpStatus.INTERNAL_SERVER_ERROR;
+    const message = fixedResponse?.message ?? 'Internal server error';
 
     this.logger.debug(`Status: ${status}`);
 
