@@ -1,4 +1,10 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateHabitDTO } from './dto/create-habit.dto';
@@ -6,8 +12,11 @@ import { Habit } from './habit.entity';
 import { HabitCompletion } from './habit-completion.entity';
 import { UpdateHabitDTO } from './dto/update-habit.dto';
 import { type Redis, REDIS } from '../redis/redis.client';
+import { RedisLock } from '../redis/redis-lock.service';
 
 const HABITS_CACHE_TTL_SECONDS = 60;
+const COMPLETE_LOCK_TTL_MS = 5000;
+
 const habitsCacheKey = (id: number): string => `cache:habits:${id}`;
 
 // Business logic lives here. No HTTP concepts (requests, status codes, routes).
@@ -20,6 +29,7 @@ export class HabitsService {
     @InjectRepository(HabitCompletion)
     private readonly completions: Repository<HabitCompletion>,
     @Inject(REDIS) private readonly redis: Redis,
+    @Inject(REDIS) private readonly locks: RedisLock,
   ) {}
 
   // SELECT * FROM "Habit"
@@ -88,7 +98,35 @@ export class HabitsService {
   // so no null check is needed here.
   async complete(habitId: number, userId: number): Promise<HabitCompletion> {
     await this.findOne(habitId, userId);
-    return this.completions.save(this.completions.create({ habitId }));
+
+    const release = await this.locks
+      .acquire(`lock:complete:${habitId}`, COMPLETE_LOCK_TTL_MS)
+      .catch(() => {
+        throw new ServiceUnavailableException('Try again shortly.');
+      });
+
+    // In the case where the lock is unreleased
+    if (!release) {
+      throw new ConflictException(`Habit ${habitId} is already being updated.`);
+    }
+
+    try {
+      // Select the completed habit by habitID
+      const doneToday = await this.completions
+        .createQueryBuilder('completion')
+        .where('completion.habitId = :habitId', { habitId })
+        .andWhere(`completion.completedAt >= date_trunc('day', LOCALTIMESTAMP)`)
+        .getExists();
+      // If a habit has already been done today throw error
+      if (doneToday) {
+        throw new ConflictException(`Habit ${habitId} is already done today`);
+      }
+      // Return await so the insert finishes before the "finally block" releases the lock.
+      return await this.completions.save(this.completions.create({ habitId }));
+    } finally {
+      // Release the lock after all operations are completed.
+      await release();
+    }
   }
 
   // SELECT * FROM "HabitCompletion" WHERE "habitId" = ? ORDER BY "completedAt" DESC

@@ -5,18 +5,14 @@ import {
   type OnApplicationShutdown,
 } from '@nestjs/common';
 import { connectRedis, REDIS, type Redis } from './redis.client';
-// import { RedisLock } from './redis-lock.service';
+import { RedisLock } from './redis-lock.service';
 
 // @Global: infrastructure any feature module may need, like the DB connection.
 // Feature modules can inject REDIS without importing this module.
 @Global()
-// @Module({
-//   providers: [{ provide: REDIS, useFactory: connectRedis }, RedisLock],
-//   exports: [REDIS, RedisLock],
-// })
 @Module({
-  providers: [{ provide: REDIS, useFactory: connectRedis }],
-  exports: [REDIS],
+  providers: [{ provide: REDIS, useFactory: connectRedis }, RedisLock],
+  exports: [REDIS, RedisLock],
 })
 export class RedisModule implements OnApplicationShutdown {
   constructor(@Inject(REDIS) private readonly redis: Redis) {}
