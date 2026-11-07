@@ -5,6 +5,7 @@ import { AuthGuard } from './auth.guard';
 import type { AuthRequest } from './jwt-payload';
 import { Public } from './public.decorator';
 import { UserRole } from '../users/user.entity';
+import type { TokenRevocationService } from './token-revocation.service';
 
 class TestController {
   @Public()
@@ -27,8 +28,18 @@ function contextFor(handler: () => void, authorization?: string) {
 
 describe('AuthGuard', () => {
   // A real JwtService: signing and verifying is what's under test.
-  const jwt = new JwtService({ secret: 'test-secret' });
-  const guard = new AuthGuard(jwt, new Reflector());
+  // Every token it signs gets jti 'token-1', as the app's tokens get one each.
+  const jwt = new JwtService({
+    secret: 'test-secret',
+    signOptions: { jwtid: 'token-1' },
+  });
+  // Nothing is revoked unless a test says so.
+  const revocation = { isRevoked: jest.fn().mockResolvedValue(false) };
+  const guard = new AuthGuard(
+    jwt,
+    new Reflector(),
+    revocation as unknown as TokenRevocationService,
+  );
   const { open, closed } = TestController.prototype;
   const claims = { sub: 1, email: 'alice@test.com', role: UserRole.USER };
 
@@ -75,7 +86,9 @@ describe('AuthGuard', () => {
   });
 
   it('attaches the user from a valid token, and nothing else', async () => {
-    const token = await jwt.signAsync(claims);
+    // An explicit exp: this JwtService has no expiresIn (see the expired test).
+    const exp = Math.floor(Date.now() / 1000) + 60;
+    const token = await jwt.signAsync({ ...claims, exp });
     const { context, request } = contextFor(closed, `Bearer ${token}`);
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
@@ -85,5 +98,25 @@ describe('AuthGuard', () => {
       email: 'alice@test.com',
       role: UserRole.USER,
     });
+    expect(request.accessToken).toEqual({ jti: 'token-1', exp });
+  });
+
+  it('rejects a token without a jti (issued before revocation existed)', async () => {
+    const old = await new JwtService({ secret: 'test-secret' }).signAsync(
+      claims,
+    );
+    const { context } = contextFor(closed, `Bearer ${old}`);
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it('rejects a revoked token', async () => {
+    revocation.isRevoked.mockResolvedValueOnce(true);
+    const token = await jwt.signAsync(claims);
+    const { context } = contextFor(closed, `Bearer ${token}`);
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 });

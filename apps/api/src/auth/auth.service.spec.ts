@@ -8,6 +8,7 @@ import { AuthService } from './auth.service';
 import { RefreshToken } from './refresh-token.entity';
 import { UsersService } from '../users/users.service';
 import { UserRole } from '../users/user.entity';
+import { TokenRevocationService } from './token-revocation.service';
 
 const RAW_TOKEN = 'raw-refresh-token';
 const HOUR_MS = 60 * 60 * 1000;
@@ -44,6 +45,7 @@ describe('AuthService.refresh', () => {
     insert: jest.Mock;
   };
   let jwtService: { signAsync: jest.Mock };
+  let revocation: { revokeAllTokens: jest.Mock; revokeToken: jest.Mock };
 
   beforeEach(async () => {
     refreshTokens = {
@@ -52,6 +54,7 @@ describe('AuthService.refresh', () => {
       insert: jest.fn().mockResolvedValue({}),
     };
     jwtService = { signAsync: jest.fn().mockResolvedValue('new-access-token') };
+    revocation = { revokeAllTokens: jest.fn(), revokeToken: jest.fn() };
 
     // The same DI container the app uses, with fakes behind the same tokens.
     // @InjectRepository(RefreshToken) is getRepositoryToken(RefreshToken) underneath.
@@ -61,6 +64,7 @@ describe('AuthService.refresh', () => {
         { provide: getRepositoryToken(RefreshToken), useValue: refreshTokens },
         { provide: JwtService, useValue: jwtService },
         { provide: UsersService, useValue: {} }, // refresh() never calls it
+        { provide: TokenRevocationService, useValue: revocation },
       ],
     }).compile();
 
@@ -94,6 +98,7 @@ describe('AuthService.refresh', () => {
       { userId: 1, revokedAt: IsNull() },
       { revokedAt: expect.any(Date) },
     );
+    expect(revocation.revokeAllTokens).toHaveBeenCalledWith(1);
     expect(jwtService.signAsync).not.toHaveBeenCalled();
   });
 
@@ -104,6 +109,7 @@ describe('AuthService.refresh', () => {
 
     await expectInvalidToken(service.refresh(RAW_TOKEN));
     expect(refreshTokens.update).not.toHaveBeenCalled();
+    expect(revocation.revokeAllTokens).not.toHaveBeenCalled();
   });
 
   it('treats losing the race (affected === 0) as reuse', async () => {
@@ -116,6 +122,7 @@ describe('AuthService.refresh', () => {
       { userId: 1, revokedAt: IsNull() },
       { revokedAt: expect.any(Date) },
     );
+    expect(revocation.revokeAllTokens).toHaveBeenCalledWith(1);
     expect(jwtService.signAsync).not.toHaveBeenCalled();
   });
 
@@ -130,11 +137,10 @@ describe('AuthService.refresh', () => {
       { id: 1, revokedAt: IsNull() },
       { revokedAt: expect.any(Date) },
     );
-    expect(jwtService.signAsync).toHaveBeenCalledWith({
-      sub: 1,
-      email: 'alice@test.com',
-      role: UserRole.USER,
-    });
+    expect(jwtService.signAsync).toHaveBeenCalledWith(
+      { sub: 1, email: 'alice@test.com', role: UserRole.USER },
+      { jwtid: expect.any(String) }, // every token gets its own jti
+    );
     expect(pair).toEqual({
       accessToken: 'new-access-token',
       refreshToken: expect.stringMatching(/^[0-9a-f]{64}$/),

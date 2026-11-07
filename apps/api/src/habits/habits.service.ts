@@ -29,20 +29,20 @@ export class HabitsService {
     @InjectRepository(HabitCompletion)
     private readonly completions: Repository<HabitCompletion>,
     @Inject(REDIS) private readonly redis: Redis,
-    @Inject(REDIS) private readonly locks: RedisLock,
+    private readonly locks: RedisLock,
   ) {}
 
-  // SELECT * FROM "Habit"
+  // Cache-aside (§5): Redis first; on a miss, the DB, then remember the result.
   async findAll(userId: number): Promise<Habit[]> {
     const key = habitsCacheKey(userId);
-    // Check redis cache for existing records
+    // A Redis error counts as a miss. The DB is the source of truth.
     const cached = await this.redis.get(key).catch(() => null);
-    // If the users habits has already been cached just return it
-    if (cached) return JSON.parse(cached) as Habit[];
+    if (cached) {
+      // JSON has no Date type: createdAt comes back as a string (§5.3).
+      return JSON.parse(cached) as Habit[];
+    }
 
-    // Fetch all habits of the user
-    const habits = this.habits.find({ where: { userId } });
-    // Save the users habits in cache, indexed by the key
+    const habits = await this.habits.find({ where: { userId } });
     await this.redis
       .set(key, JSON.stringify(habits), {
         expiration: { type: 'EX', value: HABITS_CACHE_TTL_SECONDS },
@@ -82,7 +82,7 @@ export class HabitsService {
     dto: UpdateHabitDTO,
   ): Promise<Habit> {
     const habit = await this.findOne(id, userId); // 404 if missing or not yours
-    const saved = this.habits.save(this.habits.merge(habit, dto));
+    const saved = await this.habits.save(this.habits.merge(habit, dto));
     await this.invalidate(userId);
     return saved;
   }

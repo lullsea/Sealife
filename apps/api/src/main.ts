@@ -1,20 +1,14 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { configureApp } from './configure-app';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true, // Strips properties that do not have any decorators
-      forbidNonWhitelisted: true, // Throws an error if non-whitelisted properties are present
-      transform: true, // Automatically transforms paylods to DTO instance classes
-    }),
-  );
+  // Validation pipe and the /api prefix, shared with the e2e tests.
+  configureApp(app);
 
-  app.setGlobalPrefix('api');
   // Swagger UI at /docs, raw OpenAPI JSON at /docs-json.
   // addBearerAuth() adds the "Authorize" button for JWT-protected routes.
   const config = new DocumentBuilder()
@@ -26,6 +20,7 @@ async function bootstrap() {
     SwaggerModule.createDocument(app, config),
   );
 
+  app.enableShutdownHooks();
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
