@@ -5,7 +5,6 @@ import {
   Get,
   Put,
   Param,
-  ParseIntPipe,
   Post,
   Delete,
 } from '@nestjs/common';
@@ -16,6 +15,7 @@ import { CreateHabitDTO } from './dto/create-habit.dto';
 import { UpdateHabitDTO } from './dto/update-habit.dto';
 import type { AuthUser } from '../auth/jwt-payload';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { ParseIdPipe } from '../common/parse-id.pipe';
 
 // HTTP layer only: map routes to service calls. Every route here starts with /habits.
 @ApiBearerAuth() // Requires an authentication token to access this namespace
@@ -31,11 +31,11 @@ export class HabitsController {
     return this.habitsService.findAll(user.id);
   }
 
-  // GET /habits/:id. URL params are strings; ParseIntPipe converts to a number
+  // GET /habits/:id. URL params are strings; ParseIdPipe converts to a number
   // and returns 400 if it isn't one.
   @Get(':id')
   findOne(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIdPipe) id: number,
     @CurrentUser() user: AuthUser,
   ): Promise<Habit> {
     return this.habitsService.findOne(id, user.id);
@@ -53,7 +53,7 @@ export class HabitsController {
   // PUT /habits with body { "name": "...", "description"?: "..." }
   @Put(':id')
   update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIdPipe) id: number,
     @Body() dto: UpdateHabitDTO,
     @CurrentUser() user: AuthUser,
   ): Promise<Habit> {
@@ -62,13 +62,13 @@ export class HabitsController {
 
   // DELETE habit
   @Delete(':id')
-  delete(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthUser) {
+  delete(@Param('id', ParseIdPipe) id: number, @CurrentUser() user: AuthUser) {
     return this.habitsService.delete(id, user.id);
   }
   // POST /habits/:id/complete. Records one completion; 404 if the habit is missing.
   @Post(':id/complete')
   complete(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIdPipe) id: number,
     @CurrentUser() user: AuthUser,
   ): Promise<HabitCompletion> {
     return this.habitsService.complete(id, user.id);
@@ -76,7 +76,7 @@ export class HabitsController {
   // GET /habits/:id/completions, newest first.
   @Get(':id/completions')
   findCompletions(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIdPipe) id: number,
     @CurrentUser() user: AuthUser,
   ): Promise<HabitCompletion[]> {
     return this.habitsService.findCompletions(id, user.id);

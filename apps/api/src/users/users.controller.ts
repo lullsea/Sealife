@@ -1,13 +1,6 @@
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import {
-  Post,
-  Body,
-  Get,
-  Delete,
-  Put,
-  Param,
-  ParseIntPipe,
-} from '@nestjs/common';
+import { Post, Body, Get, Delete, Put, Param } from '@nestjs/common';
+import { ParseIdPipe } from '../common/parse-id.pipe';
 import { Controller } from '@nestjs/common';
 import { UsersService, type PublicUser } from './users.service';
 import { CreateUserDTO } from './dto/create-user.dto';
@@ -60,7 +53,7 @@ export class UsersController {
   // GET /users/:id (admin)
   @Roles(UserRole.ADMIN)
   @Get(':id')
-  findOneAdmin(@Param('id', ParseIntPipe) id: number): Promise<PublicUser> {
+  findOneAdmin(@Param('id', ParseIdPipe) id: number): Promise<PublicUser> {
     return this.userService.findOne(id);
   }
 
@@ -68,7 +61,7 @@ export class UsersController {
   @Roles(UserRole.ADMIN)
   @Put(':id/role')
   setRole(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIdPipe) id: number,
     @Body() dto: UpdateRoleDTO,
     @CurrentUser() admin: AuthUser,
   ): Promise<PublicUser> {
@@ -78,7 +71,7 @@ export class UsersController {
   // DELETE /users/:id (admin)
   @Roles(UserRole.ADMIN)
   @Delete(':id')
-  deleteAdmin(@Param('id', ParseIntPipe) id: number): Promise<PublicUser> {
+  deleteAdmin(@Param('id', ParseIdPipe) id: number): Promise<PublicUser> {
     return this.userService.delete(id);
   }
 }
