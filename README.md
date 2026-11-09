@@ -59,10 +59,10 @@ NestJS
 
 **Learn:**
 
-- [ ] Caching
-- [ ] TTL
-- [ ] Rate limiting
-- [ ] Distributed locks
+- [x] Caching
+- [x] TTL
+- [x] Rate limiting
+- [x] Distributed locks
 
 ## Stage 5 — Kafka
 
