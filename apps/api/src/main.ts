@@ -1,11 +1,14 @@
-import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { configureApp } from './configure-app';
+import { ConfigService } from '@nestjs/config';
+import type { Env } from './config/env.validation';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const env = app.get<ConfigService<Env, true>>(ConfigService);
+  await app.listen(env.get('PORT', { infer: true }));
   // Validation pipe and the /api prefix, shared with the e2e tests.
   configureApp(app);
 

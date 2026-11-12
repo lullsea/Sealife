@@ -10,6 +10,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './roles.guard';
 import { ACCESS_TOKEN_TTL_SECONDS } from './jwt-payload';
 import { TokenRevocationModule } from './token-revocation.module';
+import { ConfigService } from '@nestjs/config';
+import type { Env } from '../config/env.validation';
 
 // Groups everything for logging in and issuing tokens.
 @Module({
@@ -19,9 +21,12 @@ import { TokenRevocationModule } from './token-revocation.module';
     // AuthService writes RefreshToken rows; makes Repository<RefreshToken> injectable here.
     TypeOrmModule.forFeature([RefreshToken]),
     // Makes JwtService injectable in this module, pre-configured with our secret.
-    JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: ACCESS_TOKEN_TTL_SECONDS },
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>) => ({
+        secret: config.get('JWT_SECRET', { infer: true }),
+        signOptions: { expiresIn: ACCESS_TOKEN_TTL_SECONDS },
+      }),
     }),
     TokenRevocationModule,
   ],

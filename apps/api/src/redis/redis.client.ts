@@ -24,8 +24,7 @@ function createRedisClient(url: string) {
 // doesn't match what it actually returns for these options.
 export type Redis = ReturnType<typeof createRedisClient>;
 
-export async function connectRedis(): Promise<Redis> {
-  const url = process.env.REDIS_URL;
+export async function connectRedis(url: string): Promise<Redis> {
   if (!url) {
     // Fail at startup, not on the first request that needs Redis.
     throw new Error('REDIS_URL is not set (see apps/api/.env.example)');
