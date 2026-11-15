@@ -6,6 +6,7 @@ import {
   IsStrongPassword,
   MinLength,
   Matches,
+  IsTimeZone,
 } from 'class-validator';
 
 export class CreateUserDTO {
@@ -26,4 +27,8 @@ export class CreateUserDTO {
   @IsStrongPassword()
   @MinLength(8)
   readonly password: string;
+
+  @IsOptional()
+  @IsTimeZone()
+  readonly timezone?: string;
 }

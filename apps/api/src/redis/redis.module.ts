@@ -16,6 +16,7 @@ import type { Env } from '../config/env.validation';
   providers: [
     {
       provide: REDIS,
+      inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) =>
         connectRedis(config.get('REDIS_URL', { infer: true })),
     },

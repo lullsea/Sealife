@@ -8,7 +8,6 @@ import type { Env } from './config/env.validation';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const env = app.get<ConfigService<Env, true>>(ConfigService);
-  await app.listen(env.get('PORT', { infer: true }));
   // Validation pipe and the /api prefix, shared with the e2e tests.
   configureApp(app);
 
@@ -24,6 +23,6 @@ async function bootstrap() {
   );
 
   app.enableShutdownHooks();
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(env.get('PORT', { infer: true }) ?? 3000);
 }
 bootstrap();

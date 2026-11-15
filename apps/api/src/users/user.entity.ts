@@ -52,4 +52,7 @@ export class User {
     default: UserRole.USER,
   })
   role: UserRole;
+
+  @Column({ type: 'text', default: 'UTC' })
+  timezone: string;
 }

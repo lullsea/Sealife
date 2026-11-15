@@ -10,6 +10,12 @@ import {
 } from 'typeorm';
 import { Habit } from './habit.entity';
 
+// One completion per habit per period. Postgres refuses a second row with the
+// same pair, so two requests at once can't both get in. As a bonus, queries
+// by habitId alone can use this index too: it's the leftmost column.
+@Index('HabitCompletion_habitId_periodStart_key', ['habitId', 'periodStart'], {
+  unique: true,
+})
 @Entity('HabitCompletion')
 export class HabitCompletion {
   @PrimaryGeneratedColumn({ primaryKeyConstraintName: 'HabitCompletion_pkey' })
@@ -18,9 +24,11 @@ export class HabitCompletion {
   @CreateDateColumn({ type: 'timestamptz', precision: 3 })
   completedAt: Date;
 
+  @Column({ type: 'timestamptz', precision: 3 })
+  periodStart: Date;
+
   // The actual foreign key column in the DB.
   // findCompletions(habitId) is `WHERE "habitId" = ?`, so index it.
-  @Index('HabitCompletion_habitId_idx')
   @Column({ type: 'integer' })
   habitId: number;
 
