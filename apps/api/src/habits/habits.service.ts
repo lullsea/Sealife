@@ -3,7 +3,6 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
-  ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,10 +11,17 @@ import { Habit } from './habit.entity';
 import { HabitCompletion } from './habit-completion.entity';
 import { UpdateHabitDTO } from './dto/update-habit.dto';
 import { type Redis, REDIS } from '../redis/redis.client';
-import { RedisLock } from '../redis/redis-lock.service';
+import { HabitFrequency } from './habit-frequency.enum';
+import { isUniqueViolation } from '../common/db-errors';
+
+// The date_trunc unit for each frequency. A habit without one counts as daily.
+const PERIOD: Record<HabitFrequency, 'day' | 'week' | 'month'> = {
+  [HabitFrequency.DAILY]: 'day',
+  [HabitFrequency.WEEKLY]: 'week',
+  [HabitFrequency.MONTHLY]: 'month',
+};
 
 const HABITS_CACHE_TTL_SECONDS = 60;
-const COMPLETE_LOCK_TTL_MS = 5000;
 
 const habitsCacheKey = (id: number): string => `cache:habits:${id}`;
 
@@ -29,7 +35,6 @@ export class HabitsService {
     @InjectRepository(HabitCompletion)
     private readonly completions: Repository<HabitCompletion>,
     @Inject(REDIS) private readonly redis: Redis,
-    private readonly locks: RedisLock,
   ) {}
 
   // Cache-aside (§5): Redis first; on a miss, the DB, then remember the result.
@@ -97,35 +102,32 @@ export class HabitsService {
   // INSERT INTO "HabitCompletion". findOne throws 404 if the habit is missing,
   // so no null check is needed here.
   async complete(habitId: number, userId: number): Promise<HabitCompletion> {
-    await this.findOne(habitId, userId);
-
-    const release = await this.locks
-      .acquire(`lock:complete:${habitId}`, COMPLETE_LOCK_TTL_MS)
-      .catch(() => {
-        throw new ServiceUnavailableException('Try again shortly.');
-      });
-
-    // In the case where the lock is unreleased
-    if (!release) {
-      throw new ConflictException(`Habit ${habitId} is already being updated.`);
-    }
+    const habit = await this.findOne(habitId, userId);
+    const period = PERIOD[habit.frequency ?? HabitFrequency.DAILY];
 
     try {
-      // Select the completed habit by habitID
-      const doneToday = await this.completions
-        .createQueryBuilder('completion')
-        .where('completion.habitId = :habitId', { habitId })
-        .andWhere(`completion.completedAt >= date_trunc('day', LOCALTIMESTAMP)`)
-        .getExists();
-      // If a habit has already been done today throw error
-      if (doneToday) {
-        throw new ConflictException(`Habit ${habitId} is already done today`);
-      }
-      // Return await so the insert finishes before the "finally block" releases the lock.
-      return await this.completions.save(this.completions.create({ habitId }));
-    } finally {
-      // Release the lock after all operations are completed.
-      await release();
+      const { identifiers } = await this.completions
+        .createQueryBuilder()
+        .insert()
+        .values({
+          habitId,
+          // Postgres does the time zone math: the start of the current day,
+          // week or month in the user's zone. now() is the same instant the
+          // completedAt default uses, because both run in one statement.
+          periodStart: () =>
+            `date_trunc(:period, now(), (SELECT "timezone" FROM "User" WHERE "id" = :userId))`,
+        })
+        .setParameters({ period, userId })
+        .execute();
+      // Re-read, like create(): the new row with every column filled in.
+      return await this.completions.findOneByOrFail({ id: identifiers[0].id });
+    } catch (err) {
+      // The one error with a meaning here. Anything else goes to the filter.
+      if (isUniqueViolation(err, 'HabitCompletion_habitId_periodStart_key'))
+        throw new ConflictException(
+          `Habit ${habitId} has already been done for this period: ${period}`,
+        );
+      throw err;
     }
   }
 
